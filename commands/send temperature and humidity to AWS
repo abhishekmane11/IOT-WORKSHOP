@@ -1,0 +1,1 @@
+curl -X POST "http://100.48.163.24:5001/add" -H "Content-Type: application/json" -d "{\"device_id\":\"test\",\"temperature\":25.5,\"humidity\":60}"
