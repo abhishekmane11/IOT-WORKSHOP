@@ -1,0 +1,92 @@
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+
+// Access Point Credentials
+const char* ssid = "ESP8266_AP";
+const char* password = "12345678";
+
+ESP8266WebServer server(80);
+
+const int LED_PIN = D5;
+
+// Home Page
+String webpage = R"rawliteral(
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ESP8266 LED Control</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body{
+      font-family: Arial;
+      text-align: center;
+      margin-top: 50px;
+    }
+    button{
+      width: 120px;
+      height: 50px;
+      font-size: 20px;
+      margin: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>ESP8266 Access Point</h2>
+<h3>LED Control (D5)</h3>
+
+<button onclick="location.href='/on'">LED ON</button>
+<button onclick="location.href='/off'">LED OFF</button>
+
+</body>
+</html>
+)rawliteral";
+
+// Home Page
+void handleRoot() {
+  server.send(200, "text/html", webpage);
+}
+
+// LED ON
+void ledOn() {
+  digitalWrite(LED_PIN, HIGH);
+  server.send(200, "text/plain", "LED ON");
+}
+
+// LED OFF
+void ledOff() {
+  digitalWrite(LED_PIN, LOW);
+  server.send(200, "text/plain", "LED OFF");
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
+
+  // Create Wi-Fi Access Point
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(ssid, password);
+
+  Serial.println();
+  Serial.println("WiFi Access Point Created");
+  Serial.print("SSID: ");
+  Serial.println(ssid);
+  Serial.print("Password: ");
+  Serial.println(password);
+  Serial.print("IP Address: ");
+  Serial.println(WiFi.softAPIP());
+
+  // Web Server Routes
+  server.on("/", handleRoot);
+  server.on("/on", ledOn);
+  server.on("/off", ledOff);
+
+  server.begin();
+  Serial.println("Web Server Started");
+}
+
+void loop() {
+  server.handleClient();
+}
