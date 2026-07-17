@@ -16,16 +16,10 @@ void setup() {
     delay(500);
     Serial.print(".");
   }
-
-  Serial.println();
-  Serial.println("=================================");
   Serial.println("WiFi Connected!");
   Serial.print("IP Address: ");
   Serial.println(WiFi.localIP());
-  Serial.print("Signal Strength (RSSI): ");
-  Serial.print(WiFi.RSSI());
-  Serial.println(" dBm");
-  Serial.println("=================================");
+
 }
 
 void loop() {
