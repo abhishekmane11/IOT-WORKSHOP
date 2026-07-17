@@ -1,0 +1,1 @@
+curl "http://100.48.163.24:5001/data?device_id=abhishek&start_date=2026-07-17&end_date=2026-07-17"
