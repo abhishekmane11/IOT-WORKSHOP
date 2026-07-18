@@ -1,0 +1,155 @@
+#include <ESP8266WiFi.h>
+#include <PubSubClient.h>
+
+//==============================
+// WiFi Credentials
+//==============================
+const char* ssid = "Abhishek";
+const char* password = "";
+
+//==============================
+// MQTT Broker
+//==============================
+const char* mqtt_server = "10.178.136.110";
+const int mqtt_port = 1883;
+
+//==============================
+// Device Name
+//==============================
+const char* DEVICE_NAME = "abhishek";
+
+//==============================
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+String controlTopic;
+String statusTopic;
+
+#define LED_PIN LED_BUILTIN
+
+//==================================================
+// MQTT Callback
+//==================================================
+void callback(char* topic, byte* payload, unsigned int length)
+{
+  String message = "";
+
+  for (unsigned int i = 0; i < length; i++)
+  {
+    message += (char)payload[i];
+  }
+
+  Serial.println("----------------------------");
+  Serial.print("Topic   : ");
+  Serial.println(topic);
+
+  Serial.print("Message : ");
+  Serial.println(message);
+
+  if (message == "ON")
+  {
+    digitalWrite(LED_PIN, LOW);
+
+    client.publish(statusTopic.c_str(), "LED ON");
+
+    Serial.println("LED ON");
+  }
+
+  else if (message == "OFF")
+  {
+    digitalWrite(LED_PIN, HIGH);
+
+    client.publish(statusTopic.c_str(), "LED OFF");
+
+    Serial.println("LED OFF");
+  }
+
+  else
+  {
+    client.publish(statusTopic.c_str(), "INVALID COMMAND");
+  }
+}
+
+//==================================================
+// Connect WiFi
+//==================================================
+void connectWiFi()
+{
+  Serial.print("Connecting to WiFi");
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println();
+  Serial.println("WiFi Connected");
+  Serial.print("IP Address : ");
+  Serial.println(WiFi.localIP());
+}
+
+//==================================================
+// Connect MQTT
+//==================================================
+void connectMQTT()
+{
+  while (!client.connected())
+  {
+    Serial.print("Connecting to MQTT...");
+
+    if (client.connect(DEVICE_NAME))
+    {
+      Serial.println("Connected");
+
+      client.subscribe(controlTopic.c_str());
+
+      client.publish(statusTopic.c_str(), "ONLINE");
+
+      Serial.print("Subscribed to : ");
+      Serial.println(controlTopic);
+    }
+    else
+    {
+      Serial.print("Failed, rc=");
+      Serial.println(client.state());
+
+      delay(3000);
+    }
+  }
+}
+
+//==================================================
+void setup()
+{
+  Serial.begin(115200);
+
+  pinMode(LED_PIN, OUTPUT);
+
+  digitalWrite(LED_PIN, HIGH);
+
+  controlTopic = String(DEVICE_NAME) + "/control";
+  statusTopic  = String(DEVICE_NAME) + "/status";
+
+  connectWiFi();
+
+  client.setServer(mqtt_server, mqtt_port);
+
+  client.setCallback(callback);
+
+  connectMQTT();
+}
+
+//==================================================
+void loop()
+{
+  if (!client.connected())
+  {
+    connectMQTT();
+  }
+
+  client.loop();
+}
