@@ -1,0 +1,96 @@
+#include <ESP8266WiFi.h>
+#include <PubSubClient.h>
+
+// ===== WiFi =====
+const char* ssid = "YOUR_WIFI_NAME";
+const char* password = "YOUR_WIFI_PASSWORD";
+
+// ===== MQTT =====
+const char* mqtt_server = "10.178.136.110";
+const int mqtt_port = 1883;
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+// Built-in LED (GPIO2 / D4 on most NodeMCU boards)
+#define LED_PIN LED_BUILTIN
+
+void callback(char* topic, byte* payload, unsigned int length) {
+
+  String message = "";
+
+  for (unsigned int i = 0; i < length; i++) {
+    message += (char)payload[i];
+  }
+
+  Serial.print("Topic: ");
+  Serial.println(topic);
+
+  Serial.print("Message: ");
+  Serial.println(message);
+
+  if (message == "ON") {
+    digitalWrite(LED_PIN, LOW);    // Built-in LED is active LOW
+  }
+
+  else if (message == "OFF") {
+    digitalWrite(LED_PIN, HIGH);
+  }
+}
+
+void connectMQTT() {
+
+  while (!client.connected()) {
+
+    Serial.print("Connecting to MQTT...");
+
+    if (client.connect("ESP8266_Client")) {
+
+      Serial.println("Connected!");
+
+      client.subscribe("led/control");
+
+    } else {
+
+      Serial.print("Failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" Retrying in 5 seconds");
+
+      delay(5000);
+    }
+  }
+}
+
+void setup() {
+
+  Serial.begin(115200);
+
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, HIGH);
+
+  WiFi.begin(ssid, password);
+
+  Serial.print("Connecting to WiFi");
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println();
+  Serial.println("WiFi Connected");
+  Serial.print("ESP IP: ");
+  Serial.println(WiFi.localIP());
+
+  client.setServer(mqtt_server, mqtt_port);
+  client.setCallback(callback);
+}
+
+void loop() {
+
+  if (!client.connected()) {
+    connectMQTT();
+  }
+
+  client.loop();
+}
