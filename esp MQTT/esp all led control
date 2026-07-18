@@ -13,7 +13,7 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 
 // Built-in LED (GPIO2 / D4 on most NodeMCU boards)
-#define LED_PIN LED_BUILTIN
+#define LED_PIN D5
 
 void callback(char* topic, byte* payload, unsigned int length) {
 
